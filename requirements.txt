@@ -1,0 +1,4 @@
+selenium
+scrapy
+beautifulsoup
+splinter  # headless webdriver 

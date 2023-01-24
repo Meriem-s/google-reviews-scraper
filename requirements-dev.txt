@@ -1,0 +1,6 @@
+mock
+black
+flake8
+isort
+autoflake
+mypy

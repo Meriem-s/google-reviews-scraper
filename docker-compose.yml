@@ -1,0 +1,7 @@
+version: '1.0.0'
+services:
+  app:
+    build: .
+    container_name: GoogleReviews
+    volumes:
+      - .:/app

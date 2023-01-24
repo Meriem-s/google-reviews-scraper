@@ -1,0 +1,7 @@
+./creds.py
+*.log
+.html
+.json
+*.pyc
+*.json
+notes.txt
