@@ -24,17 +24,19 @@ def get_google_url(query: str, site: str = "") -> str:
     return Urls.GOOGLE_SEARCH.value + urlencode(google_dict)
 
 
-def get_google_business_info(place_name: str) -> tuple[int, str]:
-    """return cid and url of gmaps place if it exists"""
+def parse_google_business_info(place_name: str) -> tuple[int, str]:
+    """return cid, url of gmaps place if it exists"""
 
     try:
         url = get_google_url(place_name)
+        print(url)
         browser = splinter.Browser("firefox", headless=True, incognito=True)
         browser.visit(url)
         soup = BeautifulSoup(browser.html, "html.parser")
         cid = soup.find("a", {"data-rc_q": place_name})["data-rc_ludocids"]
         data_url = soup.find("a", {"data-url": True})["data-url"]
         business_url = Urls.GOOGLE.value + data_url
+        print(business_url)
         browser.quit()
         return int(cid), business_url
 
@@ -43,18 +45,30 @@ def get_google_business_info(place_name: str) -> tuple[int, str]:
 
     except NoSuchElementException as e:
         raise (f"Element not found: {e}")
-
     except Exception as e:
         raise (f"An error occurred: {e}")
 
 
-def get_reviews_tokens(url: str, cid: str) -> tuple[str, str]:
+def parse_gmaps_page(url: str, cid: str) -> tuple[str, str, int]:
 
-    """Gets reviews tokens from a gmaps page"""
+    """Gets reviews tokens from a gmaps page as well as number of reviews of the venue"""
     try:
         options = Options()
         driver = webdriver.Firefox(options=options)
+        driver.implicitly_wait(10)
+
         driver.get(url)
+
+        # Reject all cookies
+        try:
+            button = driver.find_element(
+                By.CSS_SELECTOR,
+                "button.VfPpkd-LgbsSe.VfPpkd-LgbsSe-OWXEXe-k8QpJ.VfPpkd-LgbsSe-OWXEXe-dgl2Hf.nCP5yc.AjY5Oe.DuMIQc.LQeN7",
+            )
+            button.click()
+
+        except:
+            print("no 'Reject all' button exists")
         driver.implicitly_wait(10)
         button = driver.find_element(
             By.CSS_SELECTOR, "button.ZiKfbc.tUdUte.Hk4XGb.ZqLNQd"
@@ -66,8 +80,15 @@ def get_reviews_tokens(url: str, cid: str) -> tuple[str, str]:
             f'null,null,null,null,null,null,\[\\\\"([0-9]+)\\\\",\\\\"',
             driver.page_source,
         ).group(1)
+
+        # Get number of reviews
+        review_span = driver.find_element_by_xpath('//span[@jstcache="102"]')
+        review_text = review_span.text
+        reviews_number = extract_reviews_number(review_text)
+
         driver.close()
-        return jstrack_string, id_1
+
+        return jstrack_string, id_1, reviews_number
 
     except TimeoutException as e:
         raise (f"Timeout error: {e}")
@@ -77,3 +98,18 @@ def get_reviews_tokens(url: str, cid: str) -> tuple[str, str]:
 
     except Exception as e:
         raise (f"An error occurred: {e}")
+
+
+def extract_reviews_number(review_text: str) -> int:
+    """Extract reviews number from a text.
+
+    e.g: review_text 3,049 reviews
+    Output: 3049
+
+    """
+    parts = review_text.split(" ")
+    reviews = parts[0]
+    if "," in reviews:
+        reviews = reviews.replace(",", "")
+    print("number of reviews", reviews)
+    return int(reviews)

@@ -7,10 +7,7 @@ from scrapy.exceptions import CloseSpider
 
 from google_reviews.items import GoogleReviewItem
 from google_reviews.urls_enum import Urls
-from google_reviews.utils import (
-    get_google_business_info,
-    get_reviews_tokens,
-)
+from google_reviews.utils import parse_gmaps_page, parse_google_business_info
 
 
 class GoogleReviewsSpider(scrapy.Spider):
@@ -38,21 +35,25 @@ class GoogleReviewsSpider(scrapy.Spider):
         self.id_3 = ""
         self.id_4 = ""
         self.id_5 = ""
+        self.reviews_number = None
         self.csv_file = open(csv_filename, "w")
         self.search_venue = search_venue
         self.writer = csv.DictWriter(self.csv_file, fieldnames=self.fields)
         self.writer.writeheader()
+        self.unique_reviews = set()
 
     def start_requests(self):
         search_item = self.search_venue
 
-        # validate business page
-        cid, url = get_google_business_info(search_item)
-        if cid:
+        try:
+            # validate business page
+            cid, url = parse_google_business_info(search_item)
+            self.id_2 = cid
+            self.id_4, self.id_1, self.reviews_number = parse_gmaps_page(url, cid)
             yield scrapy.Request(
-                url=url, callback=self.update_list_entites_ids, meta={"cid": cid}
+                url=self.create_list_entities_url(), callback=self.parse_reviews
             )
-        else:
+        except Exception as e:
             self.logger.info(
                 "The search item is not a business to review and has no CID assigned to, please enter the correct venue!"
             )
@@ -61,16 +62,6 @@ class GoogleReviewsSpider(scrapy.Spider):
             )
 
     def create_list_entities_url(self) -> str:
-        print("self.id_3", self.id_3)
-        if self.id_3:
-            url = f"{Urls.LIST_ENTITIES_PREFIX.value}{self.id_1}!2y{self.id_2}!2m2!2i10!3s{self.id_3}!3e1!4m6!3b1!4b1!5b1!6b1!7b1!20b0!5m2!1s{self.id_4}!7e81"
-        else:
-            url = f"{Urls.LIST_ENTITIES_PREFIX.value}{self.id_1}!2y{self.id_2}!2m2!2i10!3e1!4m6!3b1!4b1!5b1!6b1!7b1!20b0!5m2!1s{self.id_4}!7e81"
-
-        print(url)
-        return url
-
-    def update_list_entites_ids(self, response):
         """
         the url for the reviews request is under this format
         "https://www.google.com/maps/preview/review/listentitiesreviews?authuser=0&hl=en&gl=de&pb=!1m2!1y{id_1}!2y{id_2}!2m1!2i10!3s{id_3}!3e1!4m6!3b1!4b1!5b1!6b1!7b1!20b0!5m2!1s{id_4}!7e81"
@@ -82,13 +73,11 @@ class GoogleReviewsSpider(scrapy.Spider):
         id_4: fixed token is parsed from the gmaps page  of the business
 
         """
-        self.id_2 = str(response.meta["cid"])
-        self.id_4, self.id_1 = get_reviews_tokens(response.url, self.id_2)
-
-
-        yield scrapy.Request(
-            url=self.create_list_entities_url(), callback=self.parse_reviews
-        )
+        if self.id_3:
+            url = f"{Urls.LIST_ENTITIES_PREFIX.value}{self.id_1}!2y{self.id_2}!2m2!2i10!3s{self.id_3}!3e1!4m6!3b1!4b1!5b1!6b1!7b1!20b0!5m2!1s{self.id_4}!7e81"
+        else:
+            url = f"{Urls.LIST_ENTITIES_PREFIX.value}{self.id_1}!2y{self.id_2}!2m1!2i10!3e1!4m6!3b1!4b1!5b1!6b1!7b1!20b0!5m2!1s{self.id_4}!7e81"
+        return url
 
     def parse_reviews(self, response):
         """Parse reviews from the response json data and store them in the csv file"""
@@ -98,7 +87,10 @@ class GoogleReviewsSpider(scrapy.Spider):
 
             for review in reviews_raw:
                 rev = GoogleReviewItem(review)
-                self.writer.writerow(rev.__dict__)
+                review_dict = rev.__dict__
+                if str(review_dict) not in self.unique_reviews:
+                    self.writer.writerow(review_dict)
+                    self.unique_reviews.add(str(review_dict))
 
             return scrapy.Request(
                 url=self.create_list_entities_url(), callback=self.parse_reviews
