@@ -22,6 +22,6 @@ class GoogleReviewItem:
         self.content = review_raw[3]
         self.link = review_raw[18]
         self.rating = review_raw[4]
-        self.time = (datetime.datetime.utcfromtimestamp(review_raw[27] / 1000),)
+        self.time = (datetime.datetime.utcfromtimestamp(review_raw[27] / 1000))
         self.did_owner_reply = review_raw[9] is not None
         self.owner_reply = review_raw[9][1] if self.did_owner_reply else ""
