@@ -6,6 +6,7 @@ import scrapy
 from scrapy.exceptions import CloseSpider
 
 from google_reviews.items import GoogleReviewItem
+from google_reviews.spiders.custom_exceptions import NoCidFound
 from google_reviews.urls_enum import Urls
 from google_reviews.utils import parse_gmaps_page, parse_google_business_info
 
@@ -56,10 +57,7 @@ class GoogleReviewsSpider(scrapy.Spider):
             yield scrapy.Request(
                 url=self.create_list_entities_url(), callback=self.parse_reviews
             )
-        except Exception as e:
-            self.logger.info(
-                "The search item is not a business to review and has no CID assigned to, please enter the correct venue!"
-            )
+        except NoCidFound:
             raise CloseSpider(
                 "The search item is not a venue to review, please insert the correct venue string"
             )

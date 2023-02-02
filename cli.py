@@ -8,9 +8,10 @@ from google_reviews.utils import count_rows_csv
 
 # e.g. args.search "Neni Berlin"
 class GoogleReviewsCrawler:
-    def __init__(self, search: str, output: str = ""):
+    def __init__(self, search: str, output: str = "reviews.csv"):
         self.search = search
         self.output = output
+        self.spider = GoogleReviewsSpider
 
     def run(self):
         if not self.search:
@@ -18,12 +19,11 @@ class GoogleReviewsCrawler:
         process = scrapy.crawler.CrawlerProcess()
         if self.output:
             process.crawl(
-                GoogleReviewsSpider, search_venue=self.search, csv_filename=self.output
+                self.spider, search_venue=self.search, csv_filename=self.output
             )
         else:
-            process.crawl(GoogleReviewsSpider, search_venue=self.search)
+            process.crawl(self.spider, search_venue=self.search)
         process.start()
-        count_rows_csv("reviews.csv")
 
 
 if __name__ == "__main__":
