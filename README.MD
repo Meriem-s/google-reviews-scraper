@@ -1,54 +1,48 @@
-# Google Review Scraper Project
+# Scrapy Project for Parsing Google Maps Reviews
 
-A brief description of the project and its purpose.
 
-## Getting Started
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
-## Prerequisites
-Python3 or Docker
+## Requirements  📌
 
-## Installation 
-First clone the repository as follows
-``` git clone https://github.com/username/projectname.git ```
+- Docker 🐳
+- Docker-Compose 🐳
+- Python >= 3.8
 
-### Local Installation using venv
 
-1.  Create virtual environment using venv
-``` python3 -m venv venv ```
-2. Activate virtual enviroment
-``` source venv/bin/activate ```
+## Getting Started 🚀
 
-2. Install the dependencies
-``` pip install -r requirements.txt ```
+1. Build the Docker image:
+```
+$ docker build -t scrapy-docker .
+```
+2. Run the Docker container
+```
+docker run -it scrapy-docker
+```
+3. Start the Scrapy Crawler from the docker container
 
-3. under  creds.py add the API_KEY
-``` API_KEY = <YOUR_API_KEY> ```
 
-4. Run the spider
-``` scrapy crawl spider_name```
+## Usage
 
-### Docker Installation
-2. Build the docker image  then start the container
+The following arguments are available:
 
-``` docker-compose up --build ```
+search      search for the business 
+-o      the filename of the csv output file (default is "reviews.csv")
 
-### Run the Spider
-1. Install the dependencies related to the development environment 
-``` docker-compose run scrapy scrapy crawl <> ```
+## Output
 
-### Run Tests
-1. Install the dependencies related to the development environment 
-``` pip install -r requirements-dev.txt ```
+The Crawler outputs the list of the reviews in a CSV file.
 
-2. Run tests
-```  ```
 
-## Built With
-Scrapy - The web framework used
-Python - Programming language
+### Testing  🚨
+To run the tests for this project run:
+```
+pytest
+```
 
-## Authors
-Your Name - Initial work - username
+This will discover and run all tests in the tests/ directory.
 
-## License
-This project is licensed under the MIT License - see the LICENSE.md file for details
+You can also run a specific test file or test case by providing the path to the file or the case name:
+
+```
+pytest path/to/test_file.py
+```
