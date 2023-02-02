@@ -8,6 +8,7 @@ from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
+from google_reviews.spiders.custom_exceptions import NoCidFound
 
 from google_reviews.urls_enum import Urls
 
@@ -34,7 +35,10 @@ def parse_google_business_info(place_name: str) -> tuple[int, str]:
         browser = splinter.Browser("firefox", headless=True, incognito=True)
         browser.visit(url)
         soup = BeautifulSoup(browser.html, "html.parser")
-        cid = soup.find("a", {"data-rc_q": place_name})["data-rc_ludocids"]
+        try:
+            cid = soup.find("a", {"data-rc_q": place_name})["data-rc_ludocids"]
+        except Exception as e:
+            raise NoCidFound
         data_url = soup.find("a", {"data-url": True})["data-url"]
         business_url = Urls.GOOGLE.value + data_url
         print("Google Maps Url: ", business_url)
