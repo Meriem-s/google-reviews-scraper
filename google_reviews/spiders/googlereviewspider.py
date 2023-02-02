@@ -36,11 +36,14 @@ class GoogleReviewsSpider(scrapy.Spider):
         self.id_4 = ""
         self.id_5 = ""
         self.reviews_number = None
-        self.csv_file = open(csv_filename, "w")
         self.search_venue = search_venue
-        self.writer = csv.DictWriter(self.csv_file, fieldnames=self.fields)
-        self.writer.writeheader()
         self.unique_reviews = set()
+        self.csv_filename = csv_filename
+        with open(csv_filename, "w") as csv_file:
+            self.writer = csv.DictWriter(
+                csv_file, fieldnames=self.fields, quoting=csv.QUOTE_MINIMAL
+            )
+            self.writer.writeheader()
 
     def start_requests(self):
         search_item = self.search_venue
@@ -79,9 +82,18 @@ class GoogleReviewsSpider(scrapy.Spider):
             url = f"{Urls.LIST_ENTITIES_PREFIX.value}{self.id_1}!2y{self.id_2}!2m1!2i10!3e1!4m6!3b1!4b1!5b1!6b1!7b1!20b0!5m2!1s{self.id_4}!7e81"
         return url
 
+    def write_review_to_csv(self, review_dict):
+        with open(self.csv_filename, "a", newline="") as csvfile:
+            fieldnames = review_dict.keys()
+            writer = csv.DictWriter(
+                csvfile, fieldnames=fieldnames, quotechar='"', quoting=csv.QUOTE_MINIMAL
+            )
+            writer.writerow(review_dict)
+
     def parse_reviews(self, response):
         """Parse reviews from the response json data and store them in the csv file"""
         try:
+            print("List of Entites URL is: ", response.url)
             reviews_raw = json.loads(response.text[5:])[2]
             self.id_3 = quote(reviews_raw[3][-1])  # the last element of the review list
 
@@ -89,7 +101,7 @@ class GoogleReviewsSpider(scrapy.Spider):
                 rev = GoogleReviewItem(review)
                 review_dict = rev.__dict__
                 if str(review_dict) not in self.unique_reviews:
-                    self.writer.writerow(review_dict)
+                    self.write_review_to_csv(review_dict)
                     self.unique_reviews.add(str(review_dict))
 
             return scrapy.Request(
