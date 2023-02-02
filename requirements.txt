@@ -1,4 +1,4 @@
 selenium
 scrapy
-beautifulsoup
+beautifulsoup4
 splinter  # headless webdriver 
