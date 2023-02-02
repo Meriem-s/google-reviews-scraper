@@ -1,6 +1,7 @@
 import re
 from urllib.parse import urlencode, urlparse
 
+import pandas as pd
 import splinter
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -29,14 +30,14 @@ def parse_google_business_info(place_name: str) -> tuple[int, str]:
 
     try:
         url = get_google_url(place_name)
-        print(url)
+        print("Google Search Url: ", url)
         browser = splinter.Browser("firefox", headless=True, incognito=True)
         browser.visit(url)
         soup = BeautifulSoup(browser.html, "html.parser")
         cid = soup.find("a", {"data-rc_q": place_name})["data-rc_ludocids"]
         data_url = soup.find("a", {"data-url": True})["data-url"]
         business_url = Urls.GOOGLE.value + data_url
-        print(business_url)
+        print("Google Maps Url: ", business_url)
         browser.quit()
         return int(cid), business_url
 
@@ -82,7 +83,7 @@ def parse_gmaps_page(url: str, cid: str) -> tuple[str, str, int]:
         ).group(1)
 
         # Get number of reviews
-        review_span = driver.find_element_by_xpath('//span[@jstcache="102"]')
+        review_span = driver.find_element_by_xpath('//span[@jstcache="104"]')
         review_text = review_span.text
         reviews_number = extract_reviews_number(review_text)
 
@@ -111,5 +112,11 @@ def extract_reviews_number(review_text: str) -> int:
     reviews = parts[0]
     if "," in reviews:
         reviews = reviews.replace(",", "")
-    print("number of reviews", reviews)
+    print("Number of reviews: ", reviews)
     return int(reviews)
+
+
+def count_rows_csv(file_path) -> int:
+    df = pd.read_csv(file_path)
+    row_count = len(df.index)
+    print("Number of rows in the CSV file: ", row_count)
